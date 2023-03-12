@@ -1,21 +1,38 @@
-use super::value::HashValue;
+use core::fmt::{Debug, Formatter, Result as FmtResult};
+use serde::Serialize;
+use erased_serde;
 
+
+use super::{value::HashValue, NijikaResult};
+
+#[derive(Debug, Serialize, Clone)]
 pub enum NijikaBlockType {
     CONTROL,
     DATA,
 }
 
-pub trait NijikaBlockT {
+pub trait NijikaBlockT: erased_serde::Serialize {
     fn get_type(&self) -> &NijikaBlockType;
     fn get_round(&self) -> u64;
+    fn hash(&self) -> NijikaResult<HashValue>;
 }
+erased_serde::serialize_trait_object!(NijikaBlockT);
 
-pub trait NijikaControlBlockT {
+pub trait NijikaControlBlockT: NijikaBlockT {
     fn get_seed(&self) -> u64;
+    fn get_pre_hash(&self) -> &HashValue;
     fn get_proposer(&self) -> &HashValue;
     // fn get_weights_sum(&self) -> u64;
 }
+erased_serde::serialize_trait_object!(NijikaControlBlockT);
 
-pub trait NijikaDataBlockT {
+impl Debug for dyn NijikaControlBlockT {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "Block: proposer: {}, pre_hash: {}", self.get_proposer(), self.get_pre_hash())
+    }
+}
+
+pub trait NijikaDataBlockT: NijikaBlockT {
     fn get_packer(&self) -> &HashValue;
 }
+erased_serde::serialize_trait_object!(NijikaDataBlockT);

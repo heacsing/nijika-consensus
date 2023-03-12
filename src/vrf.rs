@@ -1,5 +1,5 @@
-use serde_json;
-use serde::{Serialize};
+use bincode;
+use serde::Serialize;
 use vrf::openssl::{CipherSuite, ECVRF, Error};
 use vrf::VRF;
 use rand::prelude::Rng;
@@ -38,8 +38,8 @@ impl NijikaVRFClientS {
         }
     }
     fn prove(&mut self, secret_key: &[u8], data: &NijikaVRFParams<u64>) -> Result<(Vec<u8>, Vec<u8>), Error> {
-        let nijika_vrf_params = serde_json::to_string(data).unwrap();
-        match self.client.prove(secret_key, nijika_vrf_params.as_bytes()) {
+        let nijika_vrf_params = bincode::serialize(data).unwrap();
+        match self.client.prove(secret_key, &nijika_vrf_params) {
             Ok(proof) => {
                 match self.client.proof_to_hash(&proof) {
                     Ok(hash) => {
@@ -52,8 +52,8 @@ impl NijikaVRFClientS {
         }
     }
     fn verify(&mut self, public_key: &[u8], proof: &[u8], data: &NijikaVRFParams<u64>, hash: &[u8]) -> Result<bool, Error> {
-        let nijika_vrf_params = serde_json::to_string(data).unwrap();
-        match self.client.verify(public_key, proof, nijika_vrf_params.as_bytes()) {
+        let nijika_vrf_params = bincode::serialize(data).unwrap();
+        match self.client.verify(public_key, proof, &nijika_vrf_params) {
             Ok(beta) => {
                 if beta == hash {
                     return Ok(true);

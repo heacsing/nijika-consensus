@@ -1,4 +1,4 @@
-mod core;
+mod api;
 mod primitives;
 mod vrf;
 mod consensus;

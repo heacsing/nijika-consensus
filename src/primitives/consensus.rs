@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{sync::Mutex, rc::Rc};
 
 use super::{HashValue, NijikaNodeType, NijikaControlBlockT};
 
@@ -21,7 +21,7 @@ pub struct NijikaRound {
     commit_vote: u64,
     reply_vote: u64,
     end: Mutex<bool>,
-    control_block: Option<Box<dyn NijikaControlBlockT>>
+    control_block: Option<Rc<dyn NijikaControlBlockT>>
 }
 
 impl NijikaRound {
@@ -36,6 +36,9 @@ impl NijikaRound {
             end: Mutex::new(false),
             control_block: None
         }
+    }
+    pub fn get_round_num(&self) -> u64 {
+        self.round_num
     }
     pub fn get_role(&self) -> NijikaNodeType {
         self.role
