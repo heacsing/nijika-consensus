@@ -69,8 +69,7 @@ impl NijikaVRFClientS {
 
 
 mod tests {
-    use super::*;
-
+    use super::{NijikaNodeType, NijikaVRFClientS, NijikaVRFParams};
     #[test]
     fn work() {
         let mut vrf = NijikaVRFClientS::new();

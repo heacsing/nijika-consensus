@@ -61,7 +61,7 @@ impl NijikaPBFTMessage {
         if let Ok(content) = bincode::serialize(self) {
             Ok(hash::new(&content))
         } else {
-            Err(NijikaError::PARSE_ERROR(format!("parse error: msg {:#?}", self)))
+            Err(NijikaError::ParseError(format!("parse error: msg {:#?}", self)))
         }
     }
 }

@@ -18,23 +18,28 @@ pub trait NijikaNodeT {
         let current_role = current_round.get_role();
         let current_stage = current_round.get_stage();
         if role != current_role {
-            return Err(NijikaError::MISMATCHED_ROLE(current_role, role));
+            return Err(NijikaError::MismatchedRole(current_role, role));
         }
         if stage != current_stage {
-            return Err(NijikaError::MISMATCHED_STAGE(current_stage, stage));
+            return Err(NijikaError::MismatchedStage(current_stage, stage));
         }
         Ok(())
     }
-
+    // basic info
     fn get_name(&self) -> &str;
 
     fn get_ip(&self) -> &str;
 
     fn get_id(&self) -> &HashValue;
 
+    fn set_vrf_seed(&mut self, seed: u64) -> NijikaResult<()>;
 
 
+
+    // pbft round info
     fn get_round(&self) -> &NijikaRound;
+
+    fn get_round_mut(&self) -> &mut NijikaRound;
 
     fn get_round_num(&self) -> u64;
 
@@ -45,12 +50,15 @@ pub trait NijikaNodeT {
 
     fn end_round(&self) -> NijikaResult<()>;
 
+    fn try_end_round(&mut self) -> NijikaResult<()>;
+
     fn set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
 
     fn try_set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
 
 
 
+    // handle block, block queue and block pool
     /// Create a new control block with pre_hash.
     /// Make sure that its seed equals node's VRFSeed.
     /// Then, fill its data_block_pointers and empty the node's data_block_hash_queue
@@ -66,6 +74,8 @@ pub trait NijikaNodeT {
     fn insert_data_block_pool(&mut self, hash: HashValue, block: Rc<dyn NijikaDataBlockT>) -> NijikaResult<()>;
 
 
+
+    // handle pbft message
     /// append node's pbft_message_queue with the given hash value
     fn append_pbft_message_queue(&mut self, hash: HashValue) -> NijikaResult<()>;
 

@@ -1,16 +1,16 @@
 use std::{sync::Mutex, rc::Rc};
 
-use super::{HashValue, NijikaNodeType, NijikaControlBlockT};
+use super::{HashValue, NijikaNodeType, NijikaControlBlockT, NijikaResult, NijikaError};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NijikaPBFTStage {
-    PRE_PREPARE,
-    PREPARE,
-    COMMIT,
-    REPLY,
-    WAIT_PRE_PREPARE,
-    PACKING,
-    WAIT_REPLY
+    PrePrepare,
+    Prepare,
+    Commit,
+    Reply,
+    WaitPrePrepare,
+    Packing,
+    WaitReply
 }
 
 pub struct NijikaRound {
@@ -45,5 +45,25 @@ impl NijikaRound {
     }
     pub fn get_stage(&self) -> NijikaPBFTStage {
         self.stage
+    }
+
+    pub fn vote_inc(&mut self, stage: NijikaPBFTStage) -> NijikaResult<()> {
+        match stage {
+            NijikaPBFTStage::Prepare => {
+                self.prepare_vote += 1;
+                Ok(())
+            },
+            NijikaPBFTStage::Commit => {
+                self.commit_vote += 1;
+                Ok(())
+            },
+            NijikaPBFTStage::Reply => {
+                self.reply_vote += 1;
+                Ok(())
+            },
+            _ => {
+                Err(NijikaError::IncorrectStage(stage))
+            },
+        }
     }
 }

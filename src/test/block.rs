@@ -31,7 +31,7 @@ impl NijikaBlockT for NijikaTestControlBlock {
         if let Ok(content) = bincode::serialize(self) {
             Ok(hash::new(&content))
         }else{
-            Err(NijikaError::PARSE_ERROR(format!("parse error: {}", self.signature)))
+            Err(NijikaError::ParseError(format!("parse error: {}", self.signature)))
         }
     }
 }
@@ -86,7 +86,7 @@ impl NijikaBlockT for NijikaTestDataBlock {
         if let Ok(content) = bincode::serialize(self) {
             Ok(hash::new(&content))
         }else{
-            Err(NijikaError::PARSE_ERROR(format!("parse error: {}", self.signature)))
+            Err(NijikaError::ParseError(format!("parse error: {}", self.signature)))
         }
     }
 }

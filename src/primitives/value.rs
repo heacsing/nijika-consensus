@@ -2,8 +2,6 @@ use std::fmt::Display;
 
 use serde::{Serialize, Serializer};
 
-use super::NijikaError;
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ByteArray<const L: usize>([u8; L]);
 
