@@ -1,11 +1,11 @@
-use std::rc::Rc;
+use std::{rc::Rc, collections::HashMap};
 
 use serde::Serialize;
 
-use super::{HashValue, NijikaRound, NijikaControlBlockT, NijikaBlockT, NijikaResult, NijikaPBFTMessage, NijikaPBFTStage, NijikaError, NijikaDataBlockT};
+use super::{HashValue, NijikaRound, NijikaControlBlockT, NijikaResult, NijikaPBFTMessage, NijikaPBFTStage, NijikaError, NijikaDataBlockT, NijikaPBFTMessageType};
 
 #[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy)]
-pub enum NijikaNodeType {
+pub enum NijikaNodeRole {
     NORMAL,
     PACKER,
     PROPOSER,
@@ -13,28 +13,21 @@ pub enum NijikaNodeType {
 }
 
 pub trait NijikaNodeT {
-    fn check(&self, role: NijikaNodeType, stage: NijikaPBFTStage) -> NijikaResult<()> {
-        let current_round = self.get_round();
-        let current_role = current_round.get_role();
-        let current_stage = current_round.get_stage();
-        if role != current_role {
-            return Err(NijikaError::MismatchedRole(current_role, role));
-        }
-        if stage != current_stage {
-            return Err(NijikaError::MismatchedStage(current_stage, stage));
-        }
-        Ok(())
-    }
     // basic info
     fn get_name(&self) -> &str;
 
     fn get_ip(&self) -> &str;
 
-    fn get_id(&self) -> &HashValue;
+    fn get_id(&self) -> HashValue;
+
+    fn get_role(&self) -> NijikaNodeRole;
+
+    fn get_peer_info_mut(&mut self) -> &mut HashMap<HashValue, (String, String)>;
+
+    fn get_hash_queue(&self, identifier: Option<&str>) -> &Vec<HashValue>;
+    fn get_hash_queue_mut(&mut self, identifier: Option<&str>) -> &mut Vec<HashValue>;
 
     fn set_vrf_seed(&mut self, seed: u64) -> NijikaResult<()>;
-
-
 
     // pbft round info
     fn get_round(&self) -> &NijikaRound;
@@ -82,6 +75,7 @@ pub trait NijikaNodeT {
     /// use the given hash as Key, the message as Value. Then insert it into the pbft_message_pool
     fn insert_pbft_message_pool(&mut self, hash: HashValue, message: NijikaPBFTMessage) -> NijikaResult<()>;
 
-    /// Depending on the node's impl. broadcast the hash
-    fn broadcast_message_hash(&self, hash: HashValue) -> NijikaResult<()>;
+    /// create a inv message and then broadcast the given hash to all peers, except the source node
+    fn broadcast_hash_message(&self, hash: HashValue, source: Option<HashValue>) -> NijikaResult<()>;
+
 }

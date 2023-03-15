@@ -4,7 +4,7 @@ use vrf::openssl::{CipherSuite, ECVRF, Error};
 use vrf::VRF;
 use rand::prelude::Rng;
 use rand_chacha::{ChaCha8Rng, rand_core::SeedableRng};
-use crate::primitives::NijikaNodeType;
+use crate::primitives::NijikaNodeRole;
 
 pub struct NijikaVRFClientS {
     client: ECVRF,
@@ -15,7 +15,7 @@ pub struct NijikaVRFParams<U> {
     weight: U,
     round: u64,
     seed: u64,
-    role: NijikaNodeType,
+    role: NijikaNodeRole,
 }
 
 impl NijikaVRFClientS {
@@ -69,7 +69,7 @@ impl NijikaVRFClientS {
 
 
 mod tests {
-    use super::{NijikaNodeType, NijikaVRFClientS, NijikaVRFParams};
+    use super::{NijikaNodeRole, NijikaVRFClientS, NijikaVRFParams};
     #[test]
     fn work() {
         let mut vrf = NijikaVRFClientS::new();
@@ -78,7 +78,7 @@ mod tests {
             weight: 10,
             round: 12,
             seed: 128,
-            role: NijikaNodeType::NORMAL
+            role: NijikaNodeRole::NORMAL
         };
         let (proof, hash) = vrf.prove(&s, &data).unwrap();
         println!("generating proof and hash: {:#?} \r {:#?}", &proof, &hash);

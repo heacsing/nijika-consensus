@@ -1,6 +1,6 @@
 use std::{sync::Mutex, rc::Rc};
 
-use super::{HashValue, NijikaNodeType, NijikaControlBlockT, NijikaResult, NijikaError};
+use super::{HashValue, NijikaNodeRole, NijikaControlBlockT, NijikaResult, NijikaError};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NijikaPBFTStage {
@@ -15,7 +15,7 @@ pub enum NijikaPBFTStage {
 
 pub struct NijikaRound {
     round_num: u64,
-    role: NijikaNodeType,
+    role: NijikaNodeRole,
     stage: NijikaPBFTStage,
     prepare_vote: u64,
     commit_vote: u64,
@@ -25,7 +25,7 @@ pub struct NijikaRound {
 }
 
 impl NijikaRound {
-    pub fn new(round_num: u64, role: NijikaNodeType, stage: NijikaPBFTStage) -> Self {
+    pub fn new(round_num: u64, role: NijikaNodeRole, stage: NijikaPBFTStage) -> Self {
         Self {
             round_num,
             role,
@@ -40,7 +40,7 @@ impl NijikaRound {
     pub fn get_round_num(&self) -> u64 {
         self.round_num
     }
-    pub fn get_role(&self) -> NijikaNodeType {
+    pub fn get_role(&self) -> NijikaNodeRole {
         self.role
     }
     pub fn get_stage(&self) -> NijikaPBFTStage {

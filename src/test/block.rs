@@ -1,6 +1,6 @@
 use std::{sync::Mutex, collections::HashMap};
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use serde_big_array::BigArray;
 use bincode;
 
@@ -8,7 +8,7 @@ use crate::primitives::*;
 use crate::hash::hash;
 
 use super::blockchain::M;
-#[derive(Debug, Serialize,Clone)]
+#[derive(Debug, Serialize,Clone, Deserialize)]
 pub struct NijikaTestControlBlock {
     block_type: NijikaBlockType,
     round_num: u64,
@@ -27,11 +27,17 @@ impl NijikaBlockT for NijikaTestControlBlock {
     fn get_round(&self) -> u64 {
         self.round_num
     }
-    fn hash(&self) -> NijikaResult<HashValue> {
+    fn as_bytes(&self) -> NijikaResult<Vec<u8>> {
         if let Ok(content) = bincode::serialize(self) {
-            Ok(hash::new(&content))
-        }else{
-            Err(NijikaError::ParseError(format!("parse error: {}", self.signature)))
+            Ok(content)
+        } else {
+            Err(NijikaError::ParseError(format!("Parse Error: {:#?}", self)))
+        }
+    }
+    fn hash(&self) -> NijikaResult<HashValue> {
+        match self.as_bytes() {
+            Ok(content) => Ok(hash::new(&content)),
+            Err(e) => Err(e)
         }
     }
 }
@@ -63,7 +69,7 @@ impl NijikaTestControlBlock {
         }
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NijikaTestDataBlock {
     block_type: NijikaBlockType,
     round_num: u64,
@@ -82,11 +88,17 @@ impl NijikaBlockT for NijikaTestDataBlock {
     fn get_round(&self) -> u64 {
         self.round_num
     }
-    fn hash(&self) -> NijikaResult<HashValue> {
+    fn as_bytes(&self) -> NijikaResult<Vec<u8>> {
         if let Ok(content) = bincode::serialize(self) {
-            Ok(hash::new(&content))
-        }else{
-            Err(NijikaError::ParseError(format!("parse error: {}", self.signature)))
+            Ok(content)
+        } else {
+            Err(NijikaError::ParseError(format!("Parse Error: {:#?}", self)))
+        }
+    }
+    fn hash(&self) -> NijikaResult<HashValue> {
+        match self.as_bytes() {
+            Ok(content) => Ok(hash::new(&content)),
+            Err(e) => Err(e)
         }
     }
 }

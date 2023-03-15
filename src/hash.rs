@@ -13,12 +13,12 @@ impl hash {
         HashValue::new(hasher.finish())
     }
 
-    pub fn has_target_hash(target: &HashValue, pool: &Vec<HashValue>) -> bool {
+    /* pub fn has_target_hash(target: &HashValue, pool: &Vec<HashValue>) -> bool {
         for item in pool {
             if item == target {
                 return true;
             }
         }
         return false;
-    }
+    } */
 }
