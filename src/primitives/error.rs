@@ -5,6 +5,7 @@ pub type NijikaResult<T> = Result<T, NijikaError>;
 pub enum NijikaError {
     InvalidControlBlock(String),
     InvalidPBFTMessage(String),
+    VRFError(String),
     ParseError(String),
     IncorrectStage(NijikaPBFTStage),
     MismatchedRole(NijikaNodeRole, NijikaNodeRole),

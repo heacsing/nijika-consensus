@@ -11,19 +11,19 @@ pub struct NijikaVRFClientS {
 }
 
 #[derive(Serialize, Debug)]
-pub struct NijikaVRFParams<U> {
-    weight: U,
-    round: u64,
-    seed: u64,
-    role: NijikaNodeRole,
+pub struct NijikaVRFParams {
+    pub weight: u64,
+    pub round: u64,
+    pub seed: u64,
+    pub role: NijikaNodeRole,
 }
 
 impl NijikaVRFClientS {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let vrf = ECVRF::from_suite(CipherSuite::SECP256K1_SHA256_TAI).unwrap();
         NijikaVRFClientS { client: vrf }
     }
-    fn gen_keys(&mut self, seed: u64) -> Result<(Vec<u8>, Vec<u8>), Error> {
+    pub fn gen_keys(&mut self, seed: u64) -> Result<(Vec<u8>, Vec<u8>), Error> {
         let mut rng = ChaCha8Rng::seed_from_u64(seed);
         let size: u64 = rng.gen_range(10..256);
         let mut secret_key = vec![0 as u8; size as usize];
@@ -37,7 +37,7 @@ impl NijikaVRFClientS {
             Err(e) => Err(e)
         }
     }
-    fn prove(&mut self, secret_key: &[u8], data: &NijikaVRFParams<u64>) -> Result<(Vec<u8>, Vec<u8>), Error> {
+    pub fn prove(&mut self, secret_key: &[u8], data: &NijikaVRFParams) -> Result<(Vec<u8>, Vec<u8>), Error> {
         let nijika_vrf_params = bincode::serialize(data).unwrap();
         match self.client.prove(secret_key, &nijika_vrf_params) {
             Ok(proof) => {
@@ -51,7 +51,7 @@ impl NijikaVRFClientS {
             Err(e) => Err(e)
         }
     }
-    fn verify(&mut self, public_key: &[u8], proof: &[u8], data: &NijikaVRFParams<u64>, hash: &[u8]) -> Result<bool, Error> {
+    pub fn verify(&mut self, public_key: &[u8], proof: &[u8], data: &NijikaVRFParams, hash: &[u8]) -> Result<bool, Error> {
         let nijika_vrf_params = bincode::serialize(data).unwrap();
         match self.client.verify(public_key, proof, &nijika_vrf_params) {
             Ok(beta) => {
@@ -66,6 +66,16 @@ impl NijikaVRFClientS {
     }
 }
 
+struct bernoulli {
+    pub selected_unit: u64,
+    own_units: u64,
+    probability: f64,
+}
+
+pub fn calculate_prospect(own_units:u64, expect_units: u64, total_unit: u64) {
+    let prospect: f64 = expect_units as f64 / total_unit as f64;
+    let mut index: u64 = 0;
+}
 
 
 mod tests {
@@ -82,7 +92,7 @@ mod tests {
         };
         let (proof, hash) = vrf.prove(&s, &data).unwrap();
         println!("generating proof and hash: {:#?} \r {:#?}", &proof, &hash);
-
+        println!("hash len: {}", hash.len());
         let result = vrf.verify(&p, &proof, &data, &hash);
         match result {
             Ok(flag) => assert!(flag),

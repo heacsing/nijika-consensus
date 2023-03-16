@@ -1,6 +1,6 @@
-use std::rc::Rc;
+use std::{rc::Rc, collections::HashMap};
 
-use crate::primitives::{
+use crate::{primitives::{
     NijikaNodeT,
     NijikaNodeRole,
     NijikaResult,
@@ -8,9 +8,40 @@ use crate::primitives::{
     NijikaPBFTMessageType,
     NijikaPBFTStage,
     NijikaControlBlockT, NijikaError, NijikaVote
-};
+}, vrf::{self, NijikaVRFParams, NijikaVRFClientS}};
 
 pub trait NijikaPBFTStageApi: NijikaNodeT {
+    fn vrf_selection (&mut self) -> NijikaResult<NijikaNodeRole> {
+        let mut vrf_client = NijikaVRFClientS::new();
+        let seed = self.get_vrf_seed()?;
+        // e.g. {NijikaNodeRole::Packer: (vrf_hash, vrf_proof)}
+        let role_keys = [NijikaNodeRole::PACKER, NijikaNodeRole::PROPOSER, NijikaNodeRole::VALIDATOR];
+        let mut role_map : HashMap<NijikaNodeRole, (Vec<u8>, Vec<u8>)>= HashMap::new();
+        for role in role_keys {
+            let params = NijikaVRFParams {
+                weight: self.get_weight(),
+                round: self.get_round_num(),
+                seed: seed,
+                role
+            };
+            if let Ok((proof, hash)) = vrf_client.prove(self.get_private_key(), &params) {
+                role_map.insert(role, (hash, proof));
+            } else {
+                return Err(NijikaError::VRFError(format!("Error when generating node's hash and proof in role: {:?}", role)));
+            }
+        }
+        todo!()
+    }
+    fn start_a_new_round(&mut self, round_num: u64) -> NijikaResult<()> {
+        let mut vrf_client = vrf::NijikaVRFClientS::new();
+        if let Ok((p1, p2)) = vrf_client.gen_keys(self.get_vrf_seed()?) {
+            self.set_keys(p1, p2)?;
+        }
+        todo!()
+    }
+
+
+
     fn check(&self, role: NijikaNodeRole, stage: NijikaPBFTStage) -> NijikaResult<()> {
         let current_round = self.get_round();
         let current_role = current_round.get_role();

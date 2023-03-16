@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use super::{HashValue, NijikaRound, NijikaControlBlockT, NijikaResult, NijikaPBFTMessage, NijikaPBFTStage, NijikaError, NijikaDataBlockT, NijikaPBFTMessageType};
 
-#[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum NijikaNodeRole {
     NORMAL,
     PACKER,
@@ -22,12 +22,19 @@ pub trait NijikaNodeT {
 
     fn get_role(&self) -> NijikaNodeRole;
 
+    fn get_weight(&self) -> u64;
+
     fn get_peer_info_mut(&mut self) -> &mut HashMap<HashValue, (String, String)>;
 
     fn get_hash_queue(&self, identifier: Option<&str>) -> &Vec<HashValue>;
     fn get_hash_queue_mut(&mut self, identifier: Option<&str>) -> &mut Vec<HashValue>;
 
+    fn get_vrf_seed(&self) -> NijikaResult<u64>;
     fn set_vrf_seed(&mut self, seed: u64) -> NijikaResult<()>;
+
+    fn get_private_key(&self) -> &[u8];
+    fn get_public_key(&self) -> &[u8];
+    fn set_keys(&mut self, private_key: Vec<u8>, public_key: Vec<u8>) -> NijikaResult<()>;
 
     // pbft round info
     fn get_round(&self) -> &NijikaRound;
