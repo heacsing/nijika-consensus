@@ -1,4 +1,4 @@
-use std::{rc::Rc};
+use std::fmt::Debug;
 use serde::{Serialize, Deserialize};
 
 use crate::hash::hash;
@@ -13,14 +13,14 @@ pub enum NijikaPBFTMessageType {
     Reply,
 }
 
-#[derive(Debug, Serialize)]
-pub struct NijikaPBFTMessage {
+#[derive(Debug, Serialize, Clone)]
+pub struct NijikaPBFTMessage<CB: NijikaControlBlockT> {
     source_node: HashValue,
     round_num: u64,
     message_type: NijikaPBFTMessageType,
     control_block_hash: HashValue,
     vote: Option<NijikaVote>,
-    control_block: Option<Rc<dyn NijikaControlBlockT>>,
+    control_block: Option<CB>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
@@ -38,8 +38,8 @@ impl NijikaVote {
     }
 }
 
-impl NijikaPBFTMessage {
-    pub fn new_control_block_message(source_node: HashValue, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, control_block: Rc<dyn NijikaControlBlockT>) -> Self {
+impl<CB: NijikaControlBlockT + Serialize + Debug> NijikaPBFTMessage<CB> {
+    pub fn new_control_block_message(source_node: HashValue, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, control_block: CB) -> Self {
         NijikaPBFTMessage {
             source_node,
             round_num,
@@ -82,12 +82,8 @@ impl NijikaPBFTMessage {
         self.vote
     }
 
-    pub fn get_control_block(&self) -> Option<Rc<dyn NijikaControlBlockT>> {
-        if let Some(b) = &self.control_block {
-            Some(Rc::clone(b))
-        } else {
-            None
-        }
+    pub fn get_control_block(&self) -> &Option<CB> {
+        &self.control_block
     }
     pub fn get_control_block_hash(&self) -> HashValue {
         self.control_block_hash

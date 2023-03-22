@@ -1,4 +1,7 @@
-use std::{rc::Rc, collections::HashMap};
+use std::fmt::Debug;
+
+use rug::Integer;
+use serde::Serialize;
 
 use crate::{primitives::{
     NijikaNodeT,
@@ -7,16 +10,21 @@ use crate::{primitives::{
     NijikaPBFTMessage,
     NijikaPBFTMessageType,
     NijikaPBFTStage,
-    NijikaControlBlockT, NijikaError, NijikaVote
+    NijikaControlBlockT,
+    NijikaError,
+    NijikaVote,
+    NijikaRound,
+    NijikaDataBlockT
 }, vrf::{self, NijikaVRFParams, NijikaVRFClientS}};
 
-pub trait NijikaPBFTStageApi: NijikaNodeT {
+pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a>: NijikaNodeT<'a, CB, DB> {
     fn vrf_selection (&mut self) -> NijikaResult<NijikaNodeRole> {
-        let mut vrf_client = NijikaVRFClientS::new();
-        let seed = self.get_vrf_seed()?;
+        let (expected, total) = self.get_vrf_params();
+        let mut vrf_client = NijikaVRFClientS::new(self.get_weight(), expected, total);
+        let seed = self.get_vrf_seed();
         // e.g. {NijikaNodeRole::Packer: (vrf_hash, vrf_proof)}
         let role_keys = [NijikaNodeRole::PACKER, NijikaNodeRole::PROPOSER, NijikaNodeRole::VALIDATOR];
-        let mut role_map : HashMap<NijikaNodeRole, (Vec<u8>, Vec<u8>)>= HashMap::new();
+        // let mut role_map : HashMap<NijikaNodeRole, (Vec<u8>, Vec<u8>)>= HashMap::new();
         for role in role_keys {
             let params = NijikaVRFParams {
                 weight: self.get_weight(),
@@ -25,19 +33,36 @@ pub trait NijikaPBFTStageApi: NijikaNodeT {
                 role
             };
             if let Ok((proof, hash)) = vrf_client.prove(self.get_private_key(), &params) {
-                role_map.insert(role, (hash, proof));
+                // role_map.insert(role, (hash, proof));
+                // let hash_value: Float = Integer::from_digits(&hash, rug::integer::Order::Lsf) / Integer::i_pow_u(2, 256);
+                let (index, _) = vrf_client.sortition(&hash);
+                if index > 0 {
+                    match self.update_proof(proof, hash) {
+                        Ok(_) => {
+                            return Ok(role);
+                        },
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    }
+                }
             } else {
                 return Err(NijikaError::VRFError(format!("Error when generating node's hash and proof in role: {:?}", role)));
             }
         }
-        todo!()
+        Ok(NijikaNodeRole::NORMAL)
     }
-    fn start_a_new_round(&mut self, round_num: u64) -> NijikaResult<()> {
-        let mut vrf_client = vrf::NijikaVRFClientS::new();
-        if let Ok((p1, p2)) = vrf_client.gen_keys(self.get_vrf_seed()?) {
-            self.set_keys(p1, p2)?;
+    fn start_a_new_round(&mut self, round_num: u64, thresh: u64, expected: u64) -> NijikaResult<()> {
+        let role = self.vrf_selection()?;
+        match role {
+            NijikaNodeRole::NORMAL => self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::WaitReply)),
+            NijikaNodeRole::PACKER => self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::Packing)),
+            NijikaNodeRole::VALIDATOR => self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::WaitPrePrepare)),
+            NijikaNodeRole::PROPOSER => {
+                self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::PrePrepare))?;
+                self.prepare()
+            }
         }
-        todo!()
     }
 
 
@@ -57,15 +82,15 @@ pub trait NijikaPBFTStageApi: NijikaNodeT {
     fn pre_prepare(&mut self) -> NijikaResult<()> {
         self.check(NijikaNodeRole::PROPOSER, NijikaPBFTStage::PrePrepare)?;
         let control_block = self.new_control_block();
-        self.set_round_control_block(Rc::clone(&control_block))?;
         let control_block_hash = control_block.hash()?;
         let pbft_msg = NijikaPBFTMessage::new_control_block_message(
             self.get_id(),
             self.get_round_num(),
             NijikaPBFTMessageType::PrePrepare,
             control_block_hash,
-            control_block
+            control_block.clone()
         );
+        self.set_round_control_block(control_block)?;
         let pbft_msg_hash = pbft_msg.hash()?;
         self.append_pbft_message_queue(pbft_msg_hash)?;
         self.insert_pbft_message_pool(pbft_msg_hash, pbft_msg)?;
@@ -73,9 +98,9 @@ pub trait NijikaPBFTStageApi: NijikaNodeT {
         println!("[Complete PrePrepare]");
         Ok(())
     }
-    fn handle_pre_prepare(&mut self, control_block: Rc<dyn NijikaControlBlockT>) -> NijikaResult<()> {
+    fn handle_pre_prepare(&mut self, control_block: CB) -> NijikaResult<()> {
         println!("[Handle PrePrepare]");
-        self.set_vrf_seed(control_block.get_seed())?;
+        self.set_vrf_seed(control_block.get_seed());
         self.set_round_control_block(control_block)?;
         self.set_stage(NijikaPBFTStage::Prepare)?;
         self.prepare()
@@ -146,7 +171,7 @@ pub trait NijikaPBFTStageApi: NijikaNodeT {
 
     fn reply(&mut self) -> NijikaResult<()> {
         self.check(NijikaNodeRole::PROPOSER, NijikaPBFTStage::Reply)?;
-        let control_block = self.get_round_control_block();
+        let control_block = self.get_round_control_block().clone();
         let control_block_hash = control_block.hash()?;
         let pbft_msg = NijikaPBFTMessage::new_control_block_message(
             self.get_id().clone(),
@@ -163,7 +188,7 @@ pub trait NijikaPBFTStageApi: NijikaNodeT {
         self.end_round()?;
         Ok(())
     }
-    fn handle_reply(&mut self, control_block: Rc<dyn NijikaControlBlockT>) -> NijikaResult<()> {
+    fn handle_reply(&mut self, control_block: &'a CB) -> NijikaResult<()> {
         println!("[Handle Reply]");
         if control_block.hash()? == self.get_round_control_block().hash()? {
             let current_round = self.get_round_mut();

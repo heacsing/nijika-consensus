@@ -16,3 +16,7 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 serde-big-array = "0.5.1"
 serde_json = "1.0.93"
 vrf = "0.2.4"
+rug = "1.19.1"
+
+[net]
+git-fetch-with-cli = true

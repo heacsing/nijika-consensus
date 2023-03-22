@@ -1,3 +1,6 @@
+use std::fmt::Debug;
+use serde::Serialize;
+
 use crate::primitives::{
     NijikaNodeRole,
     NijikaResult,
@@ -5,13 +8,15 @@ use crate::primitives::{
     NijikaPBFTMessageType,
     NijikaPBFTStage,
     NijikaError,
-    HashValue
+    HashValue,
+    NijikaControlBlockT,
+    NijikaDataBlockT
 };
 
 use super::NijikaPBFTStageApi;
 
-pub trait NijikaPBFTMessageApi: NijikaPBFTStageApi {
-    fn handle_pbft_message(&mut self, peer_id: HashValue, message: NijikaPBFTMessage) -> NijikaResult<()> {
+pub trait NijikaPBFTMessageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone  + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a>: NijikaPBFTStageApi<'a, CB, DB> {
+    fn handle_pbft_message(&mut self, peer_id: HashValue, message: &'a NijikaPBFTMessage<CB>) -> NijikaResult<()> {
         let message_type = message.get_type();
         let round_num = message.get_round_num();
         let message_source = message.get_source();
@@ -22,14 +27,14 @@ pub trait NijikaPBFTMessageApi: NijikaPBFTStageApi {
                 if let Some(control_block) = message.get_control_block() {
                     let message_hash = message.hash()?;
                     self.append_pbft_message_queue(message_hash)?;
-                    self.insert_pbft_message_pool(message_hash, message)?;
+                    self.insert_pbft_message_pool(message_hash, message.clone())?;
                     if round_num != self.get_round_num() ||
                     self.get_round().get_stage() != NijikaPBFTStage::WaitPrePrepare ||
                     self.get_role() != NijikaNodeRole::VALIDATOR {
-                        self.set_vrf_seed(control_block.get_seed())?;
-                        self.set_round_control_block(control_block)?;
+                        self.set_vrf_seed(control_block.get_seed());
+                        self.set_round_control_block(control_block.clone())?;
                     } else {
-                        self.handle_pre_prepare(control_block)?;
+                        self.handle_pre_prepare(control_block.clone())?;
                     }
                     self.broadcast_hash_message(message_hash, Some(peer_id))?;
                     Ok(())
@@ -39,7 +44,7 @@ pub trait NijikaPBFTMessageApi: NijikaPBFTStageApi {
             }
             NijikaPBFTMessageType::Prepare => {
                 if let Some(vote) = message.get_vote() {
-                    let pbft_msg = NijikaPBFTMessage::new_vote_message(
+                    let pbft_msg = NijikaPBFTMessage::<CB>::new_vote_message(
                         message_source,
                         round_num,
                         message_type,
@@ -61,7 +66,7 @@ pub trait NijikaPBFTMessageApi: NijikaPBFTStageApi {
             },
             NijikaPBFTMessageType::Commit => {
                 if let Some(vote) = message.get_vote() {
-                    let pbft_msg = NijikaPBFTMessage::new_vote_message(
+                    let pbft_msg = NijikaPBFTMessage::<CB>::new_vote_message(
                         message_source,
                         round_num,
                         message_type,

@@ -27,11 +27,11 @@ pub trait NijikaControlBlockT: NijikaBlockT {
 }
 erased_serde::serialize_trait_object!(NijikaControlBlockT);
 
-impl Debug for dyn NijikaControlBlockT {
+/* impl Debug for dyn NijikaControlBlockT {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "Block: proposer: {}, pre_hash: {}", self.get_proposer(), self.get_pre_hash())
     }
-}
+} */
 
 pub trait NijikaDataBlockT: NijikaBlockT {
     fn get_packer(&self) -> &HashValue;

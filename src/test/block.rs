@@ -56,7 +56,7 @@ impl NijikaControlBlockT for NijikaTestControlBlock {
 }
 
 impl NijikaTestControlBlock {
-    fn new(node_id: HashValue, round: u64, pre_hash: HashValue) -> Self {
+    pub fn new(node_id: HashValue, round: u64, pre_hash: HashValue) -> Self {
         NijikaTestControlBlock {
             block_type: NijikaBlockType::CONTROL,
             round_num: round,
@@ -68,8 +68,20 @@ impl NijikaTestControlBlock {
             data_block_pointers: vec![],
         }
     }
+    /* pub fn from_rc(raw: &Rc<NijikaTestControlBlock>) -> Self {
+        Self {
+            block_type: raw.block_type.clone(),
+            round_num: raw.round_num,
+            pre_hash: raw.pre_hash,
+            seed: raw.seed,
+            seed_proof: raw.seed_proof.clone(),
+            proposer_id: raw.proposer_id,
+            signature: raw.signature,
+            data_block_pointers: raw.data_block_pointers.clone(),
+        }
+    } */
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NijikaTestDataBlock {
     block_type: NijikaBlockType,
     round_num: u64,
