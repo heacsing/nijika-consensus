@@ -1,13 +1,15 @@
-use std::{sync::Mutex, collections::HashMap};
+use std::{collections::HashMap};
 
+use libp2p::PeerId;
 use serde::{Serialize, Deserialize};
 use serde_big_array::BigArray;
 use bincode;
 
-use crate::primitives::*;
-use crate::hash::hash;
+use nijika::{NijikaBlockType, HashValue, Signature, Transaction, NijikaBlockT, NijikaResult, NijikaError};
+use nijika::{NijikaControlBlockT, NijikaDataBlockT};
+use nijika::hash::hash;
 
-use super::blockchain::M;
+pub const M: usize = 1820 * 4;
 #[derive(Debug, Serialize,Clone, Deserialize)]
 pub struct NijikaTestControlBlock {
     block_type: NijikaBlockType,
@@ -50,9 +52,6 @@ impl NijikaControlBlockT for NijikaTestControlBlock {
     fn get_pre_hash(&self) -> &HashValue {
         &self.pre_hash
     }
-    fn get_proposer(&self) -> &HashValue {
-        &self.proposer_id
-    }
 }
 
 impl NijikaTestControlBlock {
@@ -68,18 +67,12 @@ impl NijikaTestControlBlock {
             data_block_pointers: vec![],
         }
     }
-    /* pub fn from_rc(raw: &Rc<NijikaTestControlBlock>) -> Self {
-        Self {
-            block_type: raw.block_type.clone(),
-            round_num: raw.round_num,
-            pre_hash: raw.pre_hash,
-            seed: raw.seed,
-            seed_proof: raw.seed_proof.clone(),
-            proposer_id: raw.proposer_id,
-            signature: raw.signature,
-            data_block_pointers: raw.data_block_pointers.clone(),
-        }
-    } */
+    pub fn set_seed(&mut self, seed: u64) {
+        self.seed = seed;
+    }
+    pub fn push(&mut self, data: HashValue) {
+        self.data_block_pointers.push(data);
+    }
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NijikaTestDataBlock {
@@ -115,14 +108,10 @@ impl NijikaBlockT for NijikaTestDataBlock {
     }
 }
 
-impl NijikaDataBlockT for NijikaTestDataBlock {
-    fn get_packer(&self) -> &HashValue {
-        &self.packer_id
-    }
-}
+impl NijikaDataBlockT for NijikaTestDataBlock {}
 
 impl NijikaTestDataBlock {
-    fn new(node_id: HashValue, round_num: u64) -> Self {
+    pub fn new(node_id: HashValue, round_num: u64) -> Self {
         NijikaTestDataBlock {
             block_type: NijikaBlockType::DATA,
             round_num: round_num,
@@ -134,4 +123,4 @@ impl NijikaTestDataBlock {
     }
 }
 
-pub type DataBlockPool<'a> = Mutex<HashMap<HashValue, &'a NijikaTestDataBlock>>;
+pub type DataBlockPool = HashMap<HashValue, NijikaTestDataBlock>;

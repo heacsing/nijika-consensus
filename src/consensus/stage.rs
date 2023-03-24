@@ -17,7 +17,7 @@ use crate::{primitives::{
     NijikaDataBlockT
 }, vrf::{self, NijikaVRFParams, NijikaVRFClientS}};
 
-pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a>: NijikaNodeT<'a, CB, DB> {
+pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a, ID: Clone + Copy + Debug + Serialize  + 'a>: NijikaNodeT<'a, CB, DB, ID> {
     fn vrf_selection (&mut self) -> NijikaResult<NijikaNodeRole> {
         let (expected, total) = self.get_vrf_params();
         let mut vrf_client = NijikaVRFClientS::new(self.get_weight(), expected, total);
@@ -32,7 +32,7 @@ pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + C
                 seed: seed,
                 role
             };
-            if let Ok((proof, hash)) = vrf_client.prove(self.get_private_key(), &params) {
+            if let Ok((proof, hash)) = vrf_client.prove(self.get_secret_key(), &params) {
                 // role_map.insert(role, (hash, proof));
                 // let hash_value: Float = Integer::from_digits(&hash, rug::integer::Order::Lsf) / Integer::i_pow_u(2, 256);
                 let (index, _) = vrf_client.sortition(&hash);
@@ -65,7 +65,45 @@ pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + C
         }
     }
 
+    fn commit_round(&mut self) -> NijikaResult<()> {
+        let block = self.get_round().get_control_block().expect("empty block in the round");
+        self.commit_control_block(block.clone())
+    }
 
+    fn end_round(&mut self) -> NijikaResult<()> {
+        self.get_round_mut().end();
+        Ok(())
+    }
+
+    fn try_end_round(&mut self) -> NijikaResult<()> {
+        self.end_round()
+    }
+
+    fn set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()> {
+        self.get_round_mut().set_stage(next);
+        Ok(())
+    }
+
+    fn try_set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()> {
+        let next = self.get_round_mut().try_set_stage(next);
+        match next {
+            Ok(stage) => {
+                if stage == NijikaPBFTStage::Commit {
+                    self.commit()
+                } else if stage == NijikaPBFTStage::Reply {
+                    self.commit_round()?;
+                    self.reply()
+                } else {
+                    println!("stage error: cannot enter next stage");
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                println!("stage error: {:#?}", e);
+                Ok(())
+            }
+        }
+    }
 
     fn check(&self, role: NijikaNodeRole, stage: NijikaPBFTStage) -> NijikaResult<()> {
         let current_round = self.get_round();

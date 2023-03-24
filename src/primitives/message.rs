@@ -14,23 +14,23 @@ pub enum NijikaPBFTMessageType {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct NijikaPBFTMessage<CB: NijikaControlBlockT> {
-    source_node: HashValue,
+pub struct NijikaPBFTMessage<CB: NijikaControlBlockT, ID: Clone + Copy + Debug + Serialize > {
+    source_node: ID,
     round_num: u64,
     message_type: NijikaPBFTMessageType,
     control_block_hash: HashValue,
-    vote: Option<NijikaVote>,
+    vote: Option<NijikaVote<ID>>,
     control_block: Option<CB>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
-pub struct NijikaVote {
-    id: HashValue,
+pub struct NijikaVote<ID: Clone + Copy + Debug + Serialize> {
+    id: ID,
     result: bool,
 }
 
-impl NijikaVote {
-    pub fn new_true(id: HashValue) -> Self {
+impl<ID: Clone + Copy + Debug + Serialize> NijikaVote<ID> {
+    pub fn new_true(id: ID) -> Self {
         NijikaVote { id, result: true }
     }
     pub fn get_result(&self) -> bool {
@@ -38,8 +38,8 @@ impl NijikaVote {
     }
 }
 
-impl<CB: NijikaControlBlockT + Serialize + Debug> NijikaPBFTMessage<CB> {
-    pub fn new_control_block_message(source_node: HashValue, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, control_block: CB) -> Self {
+impl<CB: NijikaControlBlockT + Serialize + Debug, ID: Clone + Copy + Debug + Serialize > NijikaPBFTMessage<CB, ID> {
+    pub fn new_control_block_message(source_node: ID, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, control_block: CB) -> Self {
         NijikaPBFTMessage {
             source_node,
             round_num,
@@ -50,7 +50,7 @@ impl<CB: NijikaControlBlockT + Serialize + Debug> NijikaPBFTMessage<CB> {
         }
     }
 
-    pub fn new_vote_message(source_node: HashValue, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, vote: NijikaVote) -> Self {
+    pub fn new_vote_message(source_node: ID, round_num: u64, message_type: NijikaPBFTMessageType, control_block_hash: HashValue, vote: NijikaVote<ID>) -> Self {
         NijikaPBFTMessage {
             source_node,
             round_num,
@@ -69,7 +69,7 @@ impl<CB: NijikaControlBlockT + Serialize + Debug> NijikaPBFTMessage<CB> {
         }
     }
 
-    pub fn get_source(&self) -> HashValue {
+    pub fn get_source(&self) -> ID {
         self.source_node
     }
     pub fn get_round_num(&self) -> u64 {
@@ -78,7 +78,7 @@ impl<CB: NijikaControlBlockT + Serialize + Debug> NijikaPBFTMessage<CB> {
     pub fn get_type(&self) -> NijikaPBFTMessageType {
         self.message_type
     }
-    pub fn get_vote(&self) -> Option<NijikaVote> {
+    pub fn get_vote(&self) -> Option<NijikaVote<ID>> {
         self.vote
     }
 
@@ -98,7 +98,7 @@ mod tests {
     fn test_nijika_vote_with_option(/* hash: HashValue */) {
         let a = Some(NijikaVote::new_true(HashValue::random()));
         let b = bincode::serialize(&a).expect("fail 1");
-        let c: Option<NijikaVote> = bincode::deserialize(&b).expect("fail 2");
+        let c: Option<NijikaVote<HashValue>> = bincode::deserialize(&b).expect("fail 2");
         assert_eq!(a, c);
     }
     /* fn test_nijika_pbft_message(hash: HashValue) {

@@ -1,8 +1,6 @@
-use std::{sync::Mutex, collections::HashMap};
-
 use serde::{Deserialize, Serialize};
 
-use crate::{primitives::{HashValue, NijikaPBFTMessage}, hash::hash};
+use nijika::{HashValue,hash::hash};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum MessageType {

@@ -22,7 +22,7 @@ erased_serde::serialize_trait_object!(NijikaBlockT);
 pub trait NijikaControlBlockT: NijikaBlockT {
     fn get_seed(&self) -> u64;
     fn get_pre_hash(&self) -> &HashValue;
-    fn get_proposer(&self) -> &HashValue;
+    // fn get_proposer(&self) -> &HashValue;
     // fn get_weights_sum(&self) -> u64;
 }
 erased_serde::serialize_trait_object!(NijikaControlBlockT);
@@ -34,6 +34,6 @@ erased_serde::serialize_trait_object!(NijikaControlBlockT);
 } */
 
 pub trait NijikaDataBlockT: NijikaBlockT {
-    fn get_packer(&self) -> &HashValue;
+    // fn get_packer(&self) -> &HashValue;
 }
 erased_serde::serialize_trait_object!(NijikaDataBlockT);

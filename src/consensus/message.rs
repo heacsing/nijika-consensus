@@ -15,8 +15,8 @@ use crate::primitives::{
 
 use super::NijikaPBFTStageApi;
 
-pub trait NijikaPBFTMessageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone  + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a>: NijikaPBFTStageApi<'a, CB, DB> {
-    fn handle_pbft_message(&mut self, peer_id: HashValue, message: &'a NijikaPBFTMessage<CB>) -> NijikaResult<()> {
+pub trait NijikaPBFTMessageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + Clone  + 'a, DB: NijikaDataBlockT + Serialize + Debug + Clone + 'a, ID: Clone + Copy + Debug + Serialize + 'a>: NijikaPBFTStageApi<'a, CB, DB, ID> {
+    fn handle_pbft_message(&mut self, peer_id: HashValue, message: &'a NijikaPBFTMessage<CB, ID>) -> NijikaResult<()> {
         let message_type = message.get_type();
         let round_num = message.get_round_num();
         let message_source = message.get_source();
@@ -44,7 +44,7 @@ pub trait NijikaPBFTMessageApi<'a, CB: NijikaControlBlockT + Serialize + Debug +
             }
             NijikaPBFTMessageType::Prepare => {
                 if let Some(vote) = message.get_vote() {
-                    let pbft_msg = NijikaPBFTMessage::<CB>::new_vote_message(
+                    let pbft_msg = NijikaPBFTMessage::<CB, ID>::new_vote_message(
                         message_source,
                         round_num,
                         message_type,
@@ -66,7 +66,7 @@ pub trait NijikaPBFTMessageApi<'a, CB: NijikaControlBlockT + Serialize + Debug +
             },
             NijikaPBFTMessageType::Commit => {
                 if let Some(vote) = message.get_vote() {
-                    let pbft_msg = NijikaPBFTMessage::<CB>::new_vote_message(
+                    let pbft_msg = NijikaPBFTMessage::<CB, ID>::new_vote_message(
                         message_source,
                         round_num,
                         message_type,

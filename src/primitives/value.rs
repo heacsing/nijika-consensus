@@ -57,7 +57,7 @@ impl<const L: usize> ByteArray<L> {
     pub fn from(data: Vec<u8>) -> Self {
         let res: [u8; L] = match data.try_into() {
             Ok(a) => a,
-            Err(e) => panic!("unable to convert a vec to arr, {:#?}", e)
+            Err(e) => panic!("unable to convert a vec to arr, with its length: {}", e.len())
         };
         ByteArray::new(res)
     }

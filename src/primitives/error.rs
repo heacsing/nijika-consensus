@@ -1,8 +1,12 @@
-use super::{NijikaNodeRole, NijikaPBFTStage};
+use super::{NijikaNodeRole, NijikaPBFTStage, HashValue};
 
 pub type NijikaResult<T> = Result<T, NijikaError>;
 #[derive(Debug)]
 pub enum NijikaError {
+    InitializeFailed,
+    NetworkFail(String),
+    HashCollision(HashValue),
+    InsufficientDataBlock,
     TooLessVote,
     InvalidControlBlock(String),
     InvalidPBFTMessage(String),

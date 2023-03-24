@@ -10,7 +10,7 @@ pub enum NijikaPBFTStage {
     Packing,
     WaitReply
 }
-
+#[derive(Debug)]
 pub struct NijikaRound<CB: NijikaControlBlockT> {
     thresh: u64,
     expected: u64,

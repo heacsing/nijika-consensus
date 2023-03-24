@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use serde::Serialize;
 
@@ -12,13 +12,13 @@ pub enum NijikaNodeRole {
     VALIDATOR,
 }
 
-pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT> {
+pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT, ID: Clone + Copy + Debug + Serialize> {
     // basic info
     fn get_name(&self) -> &str;
 
     fn get_ip(&self) -> &str;
 
-    fn get_id(&self) -> HashValue;
+    fn get_id(&self) -> ID;
 
     fn get_role(&self) -> NijikaNodeRole;
 
@@ -34,13 +34,12 @@ pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT> {
     fn get_vrf_seed(&self) -> u64;
     fn set_vrf_seed(&mut self, seed: u64) -> ();
 
-    fn get_private_key(&self) -> &[u8];
+    fn get_secret_key(&self) -> &[u8];
     fn get_public_key(&self) -> &[u8];
     fn set_keys(&mut self, private_key: Vec<u8>, public_key: Vec<u8>) -> ();
     fn update_proof(&mut self, proof: Vec<u8>, hash: Vec<u8>) -> NijikaResult<()>;
 
     // pbft round info
-    fn commit_round(&mut self) -> NijikaResult<()>;
 
     fn set_round(&mut self, round: NijikaRound<CB>) -> NijikaResult<()>;
 
@@ -55,13 +54,13 @@ pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT> {
 
     fn get_round_control_block(&mut self) -> &CB;
 
-    fn end_round(&mut self) -> NijikaResult<()>;
+    // fn end_round(&mut self) -> NijikaResult<()>;
 
-    fn try_end_round(&mut self) -> NijikaResult<()>;
+    // fn try_end_round(&mut self) -> NijikaResult<()>;
 
-    fn set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
+    // fn set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
 
-    fn try_set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
+    // fn try_set_stage(&mut self, next: NijikaPBFTStage) -> NijikaResult<()>;
 
 
 
@@ -71,6 +70,9 @@ pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT> {
     /// Then, fill its data_block_pointers and empty the node's data_block_hash_queue
     /// Finally, sign the block with node's key
     fn new_control_block(&self) -> CB;
+    fn load_control_block(&mut self, block: &mut CB) -> NijikaResult<()>;
+    fn commit_control_block(&mut self, block: CB) -> NijikaResult<()>;
+
     /// Create a new data block
     fn new_data_block(&self) -> DB;
 
@@ -87,7 +89,7 @@ pub trait NijikaNodeT<'a, CB: NijikaControlBlockT, DB: NijikaDataBlockT> {
     fn append_pbft_message_queue(&mut self, hash: HashValue) -> NijikaResult<()>;
 
     /// use the given hash as Key, the message as Value. Then insert it into the pbft_message_pool
-    fn insert_pbft_message_pool(&mut self, hash: HashValue, message: NijikaPBFTMessage<CB>) -> NijikaResult<()>;
+    fn insert_pbft_message_pool(&mut self, hash: HashValue, message: NijikaPBFTMessage<CB, ID>) -> NijikaResult<()>;
 
     /// create a inv message and then broadcast the given hash to all peers, except the source node
     fn broadcast_hash_message(&self, hash: HashValue, source: Option<HashValue>) -> NijikaResult<()>;
