@@ -1,6 +1,5 @@
 use std::{collections::HashMap};
 
-use libp2p::PeerId;
 use serde::{Serialize, Deserialize};
 use serde_big_array::BigArray;
 use bincode;

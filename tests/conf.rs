@@ -1,3 +1,4 @@
+
 pub const TotalWeights: u64 = 1800000;
 
 pub const STORAGE_PATH: &str = "./node.json";

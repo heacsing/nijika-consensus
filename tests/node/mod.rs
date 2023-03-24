@@ -1,8 +1,5 @@
 use std::{collections::HashMap};
 
-use libp2p::{PeerId, identity};
-use libp2p::gossipsub::{IdentTopic};
-
 use nijika::{NijikaPBFTStageApi, NijikaPBFTMessageApi, HashValue, NijikaRound, NijikaPBFTMessage, NijikaNodeT, NijikaError, NijikaResult, NijikaPBFTStage, NijikaControlBlockT, NijikaBlockT,NijikaVRFClientS, NijikaNodeRole};
 
 use crate::block::{DataBlockPool, NijikaTestControlBlock, NijikaTestDataBlock};
@@ -17,8 +14,8 @@ pub struct NijikaTestNode {
     name: String,
     ip: String,
     id: HashValue,
-    key: identity::Keypair,
-    topic: IdentTopic,
+    /* key: identity::Keypair,
+    topic: IdentTopic, */
     moneys: Vec<u64>,
     total_weight: u64,
     ledger: Vec<NijikaTestControlBlock>,
@@ -41,15 +38,15 @@ impl NijikaTestNode {
         let mut vrf_client = NijikaVRFClientS::new_raw();
         if let Ok((p1, p2)) = vrf_client.gen_keys(seed) {
             let rndm = rand::random::<u64>();
-            let key = identity::Keypair::generate_ed25519();
+            /* let key = identity::Keypair::generate_ed25519();
             let id = PeerId::from(key.public());
-            let topic = IdentTopic::new("nijika");
+            let topic = IdentTopic::new("nijika"); */
             Some(Self {
-                name: format!("nijika-node-{}", id.to_string()),
+                name: format!("nijika-node-{}", rndm),
                 ip: String::from("127.0.0.1:13000"),
-                id: HashValue::from(id.to_bytes().split_off(6)),
-                key,
-                topic,
+                id: HashValue::random(),
+                /* key,
+                topic, */
                 moneys: vec![1000],
                 total_weight: TotalWeights,
                 ledger: vec![],
@@ -69,7 +66,7 @@ impl NijikaTestNode {
             None
         }
     }
-    pub fn get_key(&self) -> &identity::Keypair {
+   /*  pub fn get_key(&self) -> &identity::Keypair {
         &self.key
     }
     pub fn get_topic(&self) -> &IdentTopic {
@@ -83,7 +80,7 @@ impl NijikaTestNode {
             Ok(id) => Ok(id),
             Err(_) => Err(NijikaError::ParseError(format!("unable to convert a HashValue to PeerId")))
         }
-    }
+    } */
 }
 
 impl<'a> NijikaPBFTStageApi<'a, NijikaTestControlBlock, NijikaTestDataBlock, HashValue> for NijikaTestNode {}
