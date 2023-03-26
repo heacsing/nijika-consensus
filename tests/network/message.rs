@@ -45,23 +45,23 @@ pub trait MessageData {
     fn from_bytes(bytes: &[u8]) -> Self;
 }
 
-#[derive(Debug, Serialize)]
-pub struct Message<C>
-where C: MessageData + for<'a> Deserialize<'a>
-{
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
     header: MessageHeader,
-    content: C,
+    content: Vec<u8>,
 }
 
-impl<C: MessageData + for<'a> Deserialize<'a>> Message<C> {
-    pub fn new_message(source_node: HashValue ,message_type: MessageType, data_type: MessageDataType, content: C) -> Self {
-        let binary_data = content.as_bytes();
-        let data_hash = hash::new(&binary_data);
+impl Message {
+    pub fn new_message(source_node: HashValue ,message_type: MessageType, data_type: MessageDataType, content: Vec<u8>) -> Self {
+        let data_hash = hash::new(&content);
         let header = MessageHeader::new(message_type, data_type, source_node, data_hash);
         Message {
             header,
             content
         }
+    }
+    pub fn get_type(&self) -> MessageType {
+        self.header.message_type
     }
     pub fn get_data_type(&self) -> MessageDataType {
         self.header.data_type

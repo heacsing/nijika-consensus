@@ -1,29 +1,13 @@
 mod message;
-use std::{net::{TcpListener}, io::{self, Read, Write}};
+pub use message::*;
+use nijika::{NijikaResult, NijikaError};
+use tokio::{spawn, net::TcpStream, io::AsyncWriteExt};
 
-use crate::node::NijikaTestNode;
-
-pub struct Network {
-    node: NijikaTestNode,
-    client: Vec<TcpListener>,
-}
-
-impl Network {
-    pub fn listen(&mut self, peer_ip: &str) {
-        self.client.push(TcpListener::bind(peer_ip).unwrap());
-        let listener = self.client.last().expect("wtf");
-        for stream in listener.incoming() {
-            match stream {
-                Ok(mut stream) => {
-                    let mut buf = Vec::new();
-                    let start_time = chrono::Utc::now().timestamp();
-                    if let Ok(len) = stream.read_to_end(&mut buf) {
-                        println!("recv from: {}", peer_ip);
-                    }
-
-                },
-                Err(e) => {println!("error while listening: {}", e);}
-            }
+pub fn tcp_send(bytes: Vec<u8>, target: String) {
+    spawn(async move {
+        let mut stream = TcpStream::connect(target).await.unwrap();
+        if let Ok(_) = stream.writable().await {
+            stream.write_all(&bytes).await.unwrap();
         }
-    }
+    });
 }
