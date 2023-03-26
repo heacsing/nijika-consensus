@@ -60,7 +60,7 @@ pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + C
             NijikaNodeRole::VALIDATOR => self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::WaitPrePrepare)),
             NijikaNodeRole::PROPOSER => {
                 self.set_round(NijikaRound::new(thresh, expected, round_num, role, NijikaPBFTStage::PrePrepare))?;
-                self.prepare()
+                self.pre_prepare()
             }
         }
     }
@@ -132,6 +132,7 @@ pub trait NijikaPBFTStageApi<'a, CB: NijikaControlBlockT + Serialize + Debug + C
         let pbft_msg_hash = pbft_msg.hash()?;
         self.append_pbft_message_queue(pbft_msg_hash)?;
         self.insert_pbft_message_pool(pbft_msg_hash, pbft_msg)?;
+        self.broadcast_hash_message(pbft_msg_hash, None)?;
         self.set_stage(NijikaPBFTStage::Prepare)?;
         println!("[Complete PrePrepare]");
         Ok(())

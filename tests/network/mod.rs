@@ -1,5 +1,4 @@
 mod message;
-
+pub use message::*;
 mod client;
-
-mod behaviour;
+pub use client::*;

@@ -1,3 +1,5 @@
+use tokio::sync::mpsc::{self, UnboundedSender, UnboundedReceiver};
+
 use super::{NijikaNodeRole, NijikaControlBlockT, NijikaResult, NijikaError};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -20,7 +22,7 @@ pub struct NijikaRound<CB: NijikaControlBlockT> {
     prepare_vote: u64,
     commit_vote: u64,
     reply_vote: u64,
-    end: bool,
+    end: (UnboundedSender<u64>, UnboundedReceiver<u64>),
     control_block: Option<CB>
 }
 
@@ -35,7 +37,7 @@ impl<CB: NijikaControlBlockT> NijikaRound<CB> {
             prepare_vote: 0,
             commit_vote: 0,
             reply_vote: 0,
-            end: false,
+            end: mpsc::unbounded_channel(),
             control_block: None
         }
     }
@@ -49,7 +51,7 @@ impl<CB: NijikaControlBlockT> NijikaRound<CB> {
             prepare_vote: 0,
             commit_vote: 0,
             reply_vote: 0,
-            end: false,
+            end: mpsc::unbounded_channel(),
             control_block: None
         }
     }
@@ -110,9 +112,11 @@ impl<CB: NijikaControlBlockT> NijikaRound<CB> {
     pub fn set_control_block(&mut self, block: CB) -> () {
         self.control_block = Some(block);
     }
-    pub fn end(&mut self) -> bool {
-        self.end = true;
-        true
+    pub fn end(&mut self) {
+        self.end.0.send(self.round_num).expect("cannot dictate round end");
+    }
+    pub async fn recv(&mut self) -> Option<u64> {
+        self.end.1.recv().await
     }
     pub fn vote_inc(&mut self, stage: NijikaPBFTStage) -> NijikaResult<()> {
         match stage {

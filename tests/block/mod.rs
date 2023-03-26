@@ -63,7 +63,7 @@ impl NijikaTestControlBlock {
             seed: 0,
             seed_proof: vec![0],
             proposer_id: node_id,
-            signature: Signature::default(),
+            signature: Signature::random(),
             data_block_pointers: vec![],
         }
     }
@@ -116,11 +116,9 @@ impl NijikaTestDataBlock {
             block_type: NijikaBlockType::DATA,
             round_num: round_num,
             packer_id: node_id,
-            signature: Signature::default(),
+            signature: Signature::random(),
             merkle_route: [HashValue::default();2*M-1],
             transaction: [Transaction::default();M],
         }
     }
 }
-
-pub type DataBlockPool = HashMap<HashValue, NijikaTestDataBlock>;
